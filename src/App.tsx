@@ -100,24 +100,32 @@ const questions: Question[] = [
 ];
 
 const App: React.FC = () => {
-  const [question1Answer, setQuestion1Answer] = useState<string>('');
-  const [question2Answer, setQuestion2Answer] = useState<string>('');
-  const [question3Answer, setQuestion3Answer] = useState<string>('');
+  const [answers, setAnswers] = useState<{
+    question1: string;
+    question2: string;
+    question3: string;
+  }>({
+    question1: '',
+    question2: '',
+    question3: '',
+  });
   const [showQuestion, setShowQuestion] = useState<QuestionNumber>(1);
 
-  const handleQuestionChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-    setAnswerFunction: React.Dispatch<React.SetStateAction<string>>
-  ) => {
-    setAnswerFunction(e.target.value);
+  const handleQuestionChange = (answer: string, id: number) => {
+    setAnswers((currentAnswers) => {
+      return {
+        ...currentAnswers,
+        [id]: answer,
+      };
+    });
 
-    if (showQuestion >= 1 && showQuestion < 3) {
+    if (id >= 1 && id < 3) {
       setShowQuestion(
         (currentQuestion) => (currentQuestion + 1) as QuestionNumber
       );
     }
 
-    if (showQuestion === 3) {
+    if (id === 3) {
       console.log('質問３まで回答しました');
     }
   };
@@ -157,15 +165,7 @@ const App: React.FC = () => {
                           name={option.name}
                           value={option.value.toString()}
                           onChange={(e) => {
-                            if (question.id === 1) {
-                              handleQuestionChange(e, setQuestion1Answer);
-                            }
-                            if (question.id === 2) {
-                              handleQuestionChange(e, setQuestion2Answer);
-                            }
-                            if (question.id === 3) {
-                              handleQuestionChange(e, setQuestion3Answer);
-                            }
+                            handleQuestionChange(e.target.value, question.id);
                           }}
                         />
                         <label htmlFor={option.value.toString()}>
