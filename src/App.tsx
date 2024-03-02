@@ -5,6 +5,7 @@ type Option = {
   name: string;
   value: number;
   text: string;
+  nextSelections?: readonly number[];
   isUnderlined?: true;
   polygon?: '▲' | '■';
 };
@@ -17,7 +18,12 @@ type Question = {
   options: Option[];
 };
 
-const questions: Question[] = [
+const defaultNextSelectionsForQuestion2: readonly number[] = [
+  2, 3, 4, 5, 6, 7, 8, 9, 112, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+  22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 114, 33, 34, 35, 36, 37, 38, 115,
+  39, 40, 41, 42, 116,
+];
+const questions: readonly Question[] = [
   {
     id: 1,
     text: '質問１',
@@ -26,11 +32,13 @@ const questions: Question[] = [
         name: 'id1',
         value: 84,
         text: '①（質問2でAのみ選択可能）',
+        nextSelections: [88],
       },
       {
         name: 'id1',
         value: 86,
         text: '②（質問2でB〜F選択可能）',
+        nextSelections: [89, 90, 91, 92, 93],
       },
     ],
   },
@@ -38,12 +46,44 @@ const questions: Question[] = [
     id: 2,
     text: '質問２',
     options: [
-      { name: 'id2', value: 88, text: 'A' },
-      { name: 'id2', value: 89, text: 'B' },
-      { name: 'id2', value: 90, text: 'C' },
-      { name: 'id2', value: 91, text: 'D' },
-      { name: 'id2', value: 92, text: 'E' },
-      { name: 'id2', value: 93, text: 'F(質問3で下線のみ選択可能)' },
+      {
+        name: 'id2',
+        value: 88,
+        text: 'A',
+        nextSelections: defaultNextSelectionsForQuestion2,
+      },
+      {
+        name: 'id2',
+        value: 89,
+        text: 'B',
+        nextSelections: defaultNextSelectionsForQuestion2,
+      },
+      {
+        name: 'id2',
+        value: 90,
+        text: 'C',
+        nextSelections: defaultNextSelectionsForQuestion2,
+      },
+      {
+        name: 'id2',
+        value: 91,
+        text: 'D',
+        nextSelections: defaultNextSelectionsForQuestion2,
+      },
+      {
+        name: 'id2',
+        value: 92,
+        text: 'E',
+        nextSelections: defaultNextSelectionsForQuestion2,
+      },
+      {
+        name: 'id2',
+        value: 93,
+        text: 'F(質問3で下線のみ選択可能)',
+        nextSelections: [
+          2, 3, 4, 5, 6, 7, 112, 20, 21, 22, 23, 25, 26, 114, 36, 37, 115, 40,
+        ],
+      },
     ],
   },
   {
@@ -101,17 +141,20 @@ const questions: Question[] = [
 
 const App: React.FC = () => {
   const [answers, setAnswers] = useState<{
-    question1: string;
-    question2: string;
-    question3: string;
+    1: Option | null;
+    2: Option | null;
+    3: Option | null;
   }>({
-    question1: '',
-    question2: '',
-    question3: '',
+    1: null,
+    2: null,
+    3: null,
   });
-  const [showQuestion, setShowQuestion] = useState<QuestionNumber>(1);
+  const [availableSelections, setAvailableSelections] = useState<number[]>(
+    questions[0].options.map((option) => option.value)
+  );
+  const [currentQuestionId, setCurrentQuestionId] = useState<QuestionNumber>(1);
 
-  const handleQuestionChange = (answer: string, id: number) => {
+  const handleQuestionChange = (answer: Option, id: number) => {
     setAnswers((currentAnswers) => {
       return {
         ...currentAnswers,
@@ -120,43 +163,72 @@ const App: React.FC = () => {
     });
 
     if (id >= 1 && id < 3) {
-      setShowQuestion(
+      setCurrentQuestionId(
         (currentQuestion) => (currentQuestion + 1) as QuestionNumber
       );
     }
 
-    if (id === 3) {
-      console.log('質問３まで回答しました');
-    }
+    if (id === 3) console.log('質問３まで回答しました');
   };
 
   const handleBackButton = () => {
-    if (showQuestion > 1 && showQuestion <= 3) {
-      setShowQuestion(
+    if (currentQuestionId > 1 && currentQuestionId <= 3) {
+      setCurrentQuestionId(
         (currentQuestion) => (currentQuestion - 1) as QuestionNumber
       );
     }
 
-    if (showQuestion === 1) {
-      console.log('質問１まで戻りました');
+    if (currentQuestionId === 1) console.log('質問１まで戻りました');
+  };
+
+  const handleNextButton = () => {
+    if (currentQuestionId >= 1 && currentQuestionId < 3) {
+      setCurrentQuestionId(
+        (currentQuestion) => (currentQuestion + 1) as QuestionNumber
+      );
     }
+
+    if (currentQuestionId === 3) console.log('質問３まで回答しました');
   };
 
   useEffect(() => {
-    console.log('質問番号が変更されました');
-  }, [showQuestion]);
+    if (currentQuestionId < 1) return console.warn('質問１までしか戻れません');
+    if (currentQuestionId > 3) return console.log('質問３まで回答しました');
+    const previousAnswer = answers[(currentQuestionId - 1) as QuestionNumber];
+
+    if (currentQuestionId !== 1 && previousAnswer === null) {
+      return console.warn('前の質問に回答してください');
+    }
+
+    const [currentQuestions] = questions.filter(
+      (question) => question.id === currentQuestionId
+    );
+    setAvailableSelections(
+      currentQuestions.options
+        .filter((option) => {
+          if (previousAnswer?.nextSelections) {
+            return previousAnswer.nextSelections.includes(option.value);
+          }
+          return true;
+        })
+        .map((option) => option.value)
+    );
+  }, [answers, currentQuestionId]);
 
   return (
     <div className="App">
       <header className="App-header">
         <h1>アンケート</h1>
         {questions.map((question) => {
-          if (question.id === showQuestion) {
+          if (question.id === currentQuestionId) {
+            const availableOptions = question.options.filter((option) =>
+              availableSelections.includes(option.value)
+            );
             return (
               <div key={question.id}>
-                <h2>{question.text}</h2>
+                <h2>{question.text} ◯◯◯◯を選んで下さい</h2>
                 <form>
-                  {question.options.map((option) => {
+                  {availableOptions.map((option) => {
                     return (
                       <div key={option.value}>
                         <input
@@ -164,8 +236,9 @@ const App: React.FC = () => {
                           id={option.value.toString()}
                           name={option.name}
                           value={option.value.toString()}
-                          onChange={(e) => {
-                            handleQuestionChange(e.target.value, question.id);
+                          checked={answers[question.id]?.value === option.value}
+                          onChange={() => {
+                            handleQuestionChange(option, question.id);
                           }}
                         />
                         <label htmlFor={option.value.toString()}>
@@ -175,7 +248,13 @@ const App: React.FC = () => {
                     );
                   })}
                 </form>
-                <button onClick={handleBackButton}>戻る</button>
+                {currentQuestionId > 1 && (
+                  <button onClick={handleBackButton}>戻る</button>
+                )}
+                {currentQuestionId < 3 &&
+                  answers[currentQuestionId] != null && (
+                    <button onClick={handleNextButton}>次へ</button>
+                  )}
               </div>
             );
           }
