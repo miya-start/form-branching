@@ -154,6 +154,10 @@ const App: React.FC = () => {
   );
   const [currentQuestionId, setCurrentQuestionId] = useState<QuestionNumber>(1);
 
+  const showingQuestions = questions.filter(
+    (question) => question.id === currentQuestionId
+  );
+
   const handleQuestionChange = (answer: Option, id: number) => {
     setAnswers((currentAnswers) => {
       return {
@@ -217,50 +221,76 @@ const App: React.FC = () => {
 
   return (
     <div className="App">
-      <header className="App-header">
-        <h1>アンケート</h1>
-        {questions.map((question) => {
-          if (question.id === currentQuestionId) {
-            const availableOptions = question.options.filter((option) =>
-              availableSelections.includes(option.value)
-            );
-            return (
-              <div key={question.id}>
-                <h2>{question.text} ◯◯◯◯を選んで下さい</h2>
-                <form>
-                  {availableOptions.map((option) => {
-                    return (
-                      <div key={option.value}>
-                        <input
-                          type="radio"
-                          id={option.value.toString()}
-                          name={option.name}
-                          value={option.value.toString()}
-                          checked={answers[question.id]?.value === option.value}
-                          onChange={() => {
-                            handleQuestionChange(option, question.id);
-                          }}
-                        />
-                        <label htmlFor={option.value.toString()}>
-                          {option.text}
-                        </label>
-                      </div>
-                    );
-                  })}
-                </form>
-                {currentQuestionId > 1 && (
-                  <button onClick={handleBackButton}>戻る</button>
-                )}
-                {currentQuestionId < 3 &&
-                  answers[currentQuestionId] != null && (
-                    <button onClick={handleNextButton}>次へ</button>
-                  )}
-              </div>
-            );
-          }
-          return null;
-        })}
-      </header>
+      <h1>アンケート</h1>
+      {showingQuestions.map((question) => {
+        const availableOptions = question.options.filter((option) =>
+          availableSelections.includes(option.value)
+        );
+        return (
+          <div key={question.id}>
+            <h2>{question.text} ◯◯◯◯を選んで下さい</h2>
+            <form>
+              {availableOptions.map((option) => {
+                const label = option.isUnderlined ? (
+                  <u>{option.text}</u>
+                ) : (
+                  option.text
+                );
+                return (
+                  <div key={option.value}>
+                    <input
+                      type="radio"
+                      id={option.value.toString()}
+                      name={option.name}
+                      value={option.value.toString()}
+                      checked={answers[question.id]?.value === option.value}
+                      onChange={() => {
+                        handleQuestionChange(option, question.id);
+                      }}
+                    />
+                    <label htmlFor={option.value.toString()}>
+                      {label}
+                      {option.polygon}
+                    </label>
+                  </div>
+                );
+              })}
+            </form>
+            <div style={{ marginTop: '20px' }}>
+              {currentQuestionId > 1 && (
+                <button
+                  style={{ marginRight: '10px' }}
+                  onClick={handleBackButton}
+                >
+                  戻る
+                </button>
+              )}
+              {currentQuestionId < 3 && answers[currentQuestionId] != null && (
+                <button onClick={handleNextButton}>次へ</button>
+              )}
+            </div>
+          </div>
+        );
+      })}
+      <hr style={{ marginTop: '40px' }} />
+      <div>
+        <h2 style={{ marginTop: '40px' }}>回答</h2>
+        {answers[1] && (
+          <span style={{ marginRight: '20px' }}>
+            質問１: {answers[1]?.text}
+          </span>
+        )}
+        {answers[2] && (
+          <span style={{ marginRight: '20px' }}>
+            質問２: {answers[2]?.text}
+          </span>
+        )}
+        {answers[3] && (
+          <span style={{ marginRight: '20px' }}>
+            質問３: {answers[3]?.text}
+          </span>
+        )}
+      </div>
     </div>
   );
 };
